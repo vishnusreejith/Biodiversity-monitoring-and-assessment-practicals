@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biodiversity Analysis Tool</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Chart.js for plots -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Load Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for active tab */
+        .tab-active {
+            border-bottom-width: 2px;
+            border-color: #10B981; /* green-500 */
+            color: #047857; /* green-800 */
+            font-weight: 600;
+        }
+        .tab-inactive {
+            color: #4B5563; /* gray-600 */
+            border-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 antialiased">
+
+    <div class="container mx-auto max-w-5xl p-4 md:p-6 min-h-screen">
+        <!-- Header -->
+        <header class="mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-green-800">
+                Biodiversity Analysis Tool
+            </h1>
+            <p class="text-lg text-gray-600">
+                Tools for Species Curves and Tree Measurements
+            </p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="flex flex-wrap border-b border-gray-300 mb-4" role="tablist">
+            <button role="tab" aria-selected="true" aria-controls="species-accumulation" id="tab-species-accumulation" class="tab-active px-4 py-3 text-sm md:text-base font-medium focus:outline-none">
+                Species Accumulation
+            </button>
+            <button role="tab" aria-selected="false" aria-controls="species-area" id="tab-species-area" class="tab-inactive px-4 py-3 text-sm md:text-base font-medium focus:outline-none">
+                Species-Area
+            </button>
+            <button role="tab" aria-selected="false" aria-controls="dbh-calculator" id="tab-dbh-calculator" class="tab-inactive px-4 py-3 text-sm md:text-base font-medium focus:outline-none">
+                DBH Calculator
+            </button>
+            <button role="tab" aria-selected="false" aria-controls="agb-calculator" id="tab-agb-calculator" class="tab-inactive px-4 py-3 text-sm md:text-base font-medium focus:outline-none">
+                AGB Calculator
+            </button>
+            <button role="tab" aria-selected="false" aria-controls="bgb-calculator" id="tab-bgb-calculator" class="tab-inactive px-4 py-3 text-sm md:text-base font-medium focus:outline-none">
+                BGB Calculator
+            </button>
+            <button role="tab" aria-selected="false" aria-controls="ivi-calculator" id="tab-ivi-calculator" class="tab-inactive px-4 py-3 text-sm md:text-base font-medium focus:outline-none">
+                IVI Calculator
+            </button>
+            <button role="tab" aria-selected="false" aria-controls="diversity-indices" id="tab-diversity-indices" class="tab-inactive px-4 py-3 text-sm md:text-base font-medium focus:outline-none">
+                Diversity Indices
+            </button>
+        </nav>
+
+        <main>
+            <!-- Panel 1: Species Accumulation -->
+            <div id="species-accumulation" role="tabpanel" class="p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-bold text-green-800 mb-4">Species Accumulation Curve</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Inputs -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="species-data" class="block text-sm font-medium text-gray-700">Sample Data</label>
+                            <p class="text-xs text-gray-500 mb-2">Enter one sample (quadrat, plot, etc.) per line. Separate species names with a comma. Casing and spacing matter ("SpeciesA" is different from "speciesA").</p>
+                            <textarea id="species-data" rows="10" class="w-full p-2 border rounded-md shadow-sm bg-gray-50 focus:ring-green-500 focus:border-green-500 font-mono text-sm" placeholder="speciesA, speciesB, speciesC&#10;speciesA, speciesD, speciesE&#10;speciesB, speciesF, speciesG, speciesA"></textarea>
+                        </div>
+                        <div>
+                            <label for="iterations" class="block text-sm font-medium text-gray-700">Randomization Iterations</label>
+                            <input type="number" id="iterations" value="100" min="10" max="1000" class="mt-1 block w-full max-w-xs p-2 border rounded-md shadow-sm bg-gray-50 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <button id="calculate-accumulation" class="px-5 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">
+                            Calculate Curve
+                        </button>
+                    </div>
+                    <!-- Chart -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <canvas id="accumulation-chart"></canvas>
+                        <p id="accumulation-status" class="text-center text-gray-500 mt-4">Chart will appear here after calculation.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 2: Species-Area -->
+            <div id="species-area" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-bold text-green-800 mb-4">Species-Area Curve</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Inputs -->
+                    <div class="space-y-4">
+                        <p class="text-gray-700">Add data points for the area you sampled and the number of species found within that area.</p>
+                        <!-- Data Entry Table -->
+                        <div class="mt-4 overflow-x-auto">
+                            <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <thead class="bg-gray-100 border-b">
+                                    <tr>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Area (units²)</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase"># of Species</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Remove</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="species-area-table-body">
+                                    <!-- Rows added dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <button id="add-area-entry" class="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">
+                            Add Data Point
+                        </button>
+                    </div>
+                    <!-- Chart -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div class="mb-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="log-log-scale" class="rounded text-green-600 focus:ring-green-500">
+                                <span class="ml-2 text-sm font-medium text-gray-700">Use Log-Log Scale</span>
+                            </label>
+                        </div>
+                        <canvas id="area-chart"></canvas>
+                        <p id="area-status" class="text-center text-gray-500 mt-4">Add data to see the plot.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 3: DBH Calculator -->
+            <div id="dbh-calculator" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-bold text-green-800 mb-4">DBH Calculator</h2>
+                <div class="space-y-4">
+                    <p class="text-gray-700">
+                        Calculate Diameter at Breast Height (DBH) from circumference. DBH is typically measured at 1.3 meters (approx 4.5 feet) from the ground.
+                    </p>
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 class="font-semibold text-green-700">Formula</h4>
+                        <p class="text-center font-mono text-lg text-green-900 bg-white p-2 rounded-md my-2 shadow-sm border">
+                            DBH = Circumference / &pi;
+                        </p>
+                        <p class="text-sm text-gray-600">Where &pi; (Pi) is approximately 3.14159.</p>
+                    </div>
+
+                    <div class="mt-6">
+                        <button id="add-dbh-entry" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">
+                            Add Tree Entry
+                        </button>
+                    </div>
+
+                    <div class="mt-4 overflow-x-auto">
+                        <table id="dbh-table" class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <thead class="bg-gray-100 border-b">
+                                <tr>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Tree ID</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Circumference (cm)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Calculated DBH (cm)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dbh-table-body">
+                                <!-- Rows will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- DBH Step-by-step container -->
+                    <div id="dbh-steps-container" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-4 mt-6">
+                        <h4 class="text-lg font-medium text-gray-700">Step-by-Step Calculation</h4>
+                        <p id="dbh-step-1" class="text-sm text-gray-600 font-mono"></p>
+                        <p id="dbh-step-2" class="text-sm text-gray-600 font-mono font-bold"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 4: AGB Calculator -->
+            <div id="agb-calculator" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-bold text-green-800 mb-4">Above Ground Biomass (AGB) Calculator</h2>
+                <div class="space-y-4">
+                    <p class="text-gray-700">
+                        Calculate Above Ground Biomass (AGB) using tree DBH, wood density, and allometric parameters.
+                        Results are typically in kilograms (kg).
+                    </p>
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 class="font-semibold text-green-700">Formula</h4>
+                        <p class="text-gray-800">A common allometric equation is used:</p>
+                        <p class="text-center font-mono text-lg text-green-900 bg-white p-2 rounded-md my-2 shadow-sm border">
+                            AGB = WoodDensity * exp(a + b * ln(DBH))
+                        </p>
+                        <p class="text-sm text-gray-600">Where 'a' is the allometric constant, 'b' is the coefficient, and 'ln' is the natural logarithm.</p>
+                    </div>
+
+                    <div class="mt-6">
+                        <button id="add-agb-entry" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">
+                            Add Tree Entry
+                        </button>
+                    </div>
+
+                    <div class="mt-4 overflow-x-auto">
+                        <table id="agb-table" class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <thead class="bg-gray-100 border-b">
+                                <tr>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Tree ID</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">DBH (cm)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Wood Density (g/cm³)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Constant (a)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Coefficient (b)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">AGB (kg)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agb-table-body">
+                                <!-- Rows will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- AGB Step-by-step container -->
+                    <div id="agb-steps-container" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-2 mt-6">
+                        <h4 class="text-lg font-medium text-gray-700">Step-by-Step Calculation (for Tree <span id="agb-steps-tree-id"></span>)</h4>
+                        <p class="text-sm text-gray-600 font-mono">1. ln(DBH) = ln(<span id="agb-step-1-val"></span>) = <span id="agb-step-1-res"></span></p>
+                        <p class="text-sm text-gray-600 font-mono">2. b * ln(DBH) = <span id="agb-step-2-b"></span> * <span id="agb-step-2-ln"></span> = <span id="agb-step-2-res"></span></p>
+                        <p class="text-sm text-gray-600 font-mono">3. a + (b * ln(DBH)) = <span id="agb-step-3-a"></span> + <span id="agb-step-3-val"></span> = <span id="agb-step-3-res"></span></p>
+                        <p class="text-sm text-gray-600 font-mono">4. exp(...) = exp(<span id="agb-step-4-val"></span>) = <span id="agb-step-4-res"></span></p>
+                        <p class="text-sm text-gray-600 font-mono">5. AGB = WoodDensity * exp(...) = <span id="agb-step-5-rho"></span> * <span id="agb-step-5-val"></span></p>
+                        <p class="text-sm text-gray-600 font-mono font-bold">6. AGB = <span id="agb-step-6-res"></span> kg</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 5: BGB Calculator -->
+            <div id="bgb-calculator" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-bold text-green-800 mb-4">Below Ground Biomass (BGB) Calculator</h2>
+                <div class="space-y-4">
+                    <p class="text-gray-700">
+                        Calculate Below Ground Biomass (BGB) using tree DBH, root-to-shoot ratio, and allometric parameters.
+                        Results are typically in kilograms (kg).
+                    </p>
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 class="font-semibold text-green-700">Formula</h4>
+                        <p class="text-gray-800">A common allometric equation is used:</p>
+                        <p class="text-center font-mono text-lg text-green-900 bg-white p-2 rounded-md my-2 shadow-sm border">
+                            BGB = R * exp(a + b * ln(DBH))
+                        </p>
+                        <p class="text-sm text-gray-600">Where 'R' is the Root-to-Shoot Ratio, 'a' is the constant, 'b' is the coefficient, and 'ln' is the natural logarithm.</p>
+                    </div>
+
+                    <div class="mt-6">
+                        <button id="add-bgb-entry" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">
+                            Add Tree Entry
+                        </button>
+                    </div>
+
+                    <div class="mt-4 overflow-x-auto">
+                        <table id="bgb-table" class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <thead class="bg-gray-100 border-b">
+                                <tr>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Tree ID</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">DBH (cm)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Root-to-Shoot Ratio (R)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Constant (a)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Coefficient (b)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">BGB (kg)</th>
+                                    <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bgb-table-body">
+                                <!-- Rows will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- BGB Step-by-step container -->
+                    <div id="bgb-steps-container" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-2 mt-6">
+                        <h4 class="text-lg font-medium text-gray-700">Step-by-Step Calculation (for Tree <span id="bgb-steps-tree-id"></span>)</h4>
+                        <p class="text-sm text-gray-600 font-mono">1. ln(DBH) = ln(<span id="bgb-step-1-val"></span>) = <span id="bgb-step-1-res"></span></p>
+                        <p class="text-sm text-gray-600 font-mono">2. b * ln(DBH) = <span id="bgb-step-2-b"></span> * <span id="bgb-step-2-ln"></span> = <span id="bgb-step-2-res"></span></p>
+                        <p class="text-sm text-gray-600 font-mono">3. a + (b * ln(DBH)) = <span id="bgb-step-3-a"></span> + <span id="bgb-step-3-val"></span> = <span id="bgb-step-3-res"></span></p>
+                        <p class="text-sm text-gray-600 font-mono">4. exp(...) = exp(<span id="bgb-step-4-val"></span>) = <span id="bgb-step-4-res"></span></p>
+                        <p class="text-sm text-gray-600 font-mono">5. BGB = R * exp(...) = <span id="bgb-step-5-r"></span> * <span id="bgb-step-5-val"></span></p>
+                        <p class="text-sm text-gray-600 font-mono font-bold">6. BGB = <span id="bgb-step-6-res"></span> kg</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 6: IVI Calculator -->
+            <div id="ivi-calculator" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-bold text-green-800 mb-4">Importance Value Index (IVI) Calculator</h2>
+                <div class="space-y-4">
+                    <p class="text-gray-700">
+                        Calculate IVI for multiple species based on their density, frequency, and basal area.
+                    </p>
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 class="font-semibold text-green-700">Formula</h4>
+                        <p class="text-center font-mono text-lg text-green-900 bg-white p-2 rounded-md my-2 shadow-sm border">
+                            IVI = Relative Density + Relative Frequency + Relative Dominance
+                        </p>
+                        <p class="text-sm text-gray-600">Where each relative value is (Species Value / Total Value) * 100.</p>
+                    </div>
+
+                    <!-- Input Table -->
+                    <div class="mt-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">1. Enter Species Data</h3>
+                        <button id="add-ivi-entry" class="mb-2 px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">
+                            Add Species Entry
+                        </button>
+                        <div class="overflow-x-auto">
+                            <table id="ivi-input-table" class="min-w-full w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <thead class="bg-gray-100 border-b">
+                                    <tr>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Species Name</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Number of Individuals</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Frequency (# Plots)</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Total Basal Area (m²)</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Remove</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ivi-input-table-body">
+                                    <!-- Rows will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Calculation Button -->
+                    <div class="mt-6">
+                        <button id="calculate-ivi" class="px-5 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150">
+                            Calculate IVI
+                        </button>
+                    </div>
+
+                    <!-- Output Table -->
+                    <div class="mt-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">2. Results</h3>
+                        <div class="overflow-x-auto">
+                            <table id="ivi-output-table" class="min-w-full w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <thead class="bg-gray-100 border-b">
+                                    <tr>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Species Name</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Rel. Density (%)</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Rel. Frequency (%)</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Rel. Dominance (%)</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">IVI</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ivi-output-table-body">
+                                    <tr>
+                                        <td colspan="5" class="p-4 text-center text-gray-500">Click "Calculate IVI" to see results.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- IVI Step-by-step container -->
+                    <div id="ivi-steps-container" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-4 mt-6">
+                        <h4 class="text-lg font-medium text-gray-700">Step-by-Step Calculation</h4>
+                        
+                        <!-- Totals -->
+                        <div>
+                            <h5 class="font-semibold text-gray-800">1. Totals</h5>
+                            <p class="text-sm text-gray-600 font-mono" id="ivi-step-total-density"></p>
+                            <p class="text-sm text-gray-600 font-mono" id="ivi-step-total-frequency"></p>
+                            <p class="text-sm text-gray-600 font-mono" id="ivi-step-total-dominance"></p>
+                        </div>
+
+                        <!-- Example Calculation -->
+                        <div>
+                            <h5 class="font-semibold text-gray-800">2. Example Calculation (for <span id="ivi-step-species-name" class="font-bold"></span>)</h5>
+                            <p class="text-sm text-gray-600 font-mono" id="ivi-step-rel-density"></p>
+                            <p class="text-sm text-gray-600 font-mono" id="ivi-step-rel-frequency"></p>
+                            <p class="text-sm text-gray-600 font-mono" id="ivi-step-rel-dominance"></p>
+                            <p class="text-sm text-gray-600 font-mono font-bold" id="ivi-step-final-ivi"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 7: Diversity Indices -->
+            <div id="diversity-indices" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-bold text-green-800 mb-4">Diversity Indices Calculator</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Input Panel -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-700">1. Enter Species Data</h3>
+                        <p class="text-sm text-gray-600">Enter each species and its total count (number of individuals).</p>
+                        <button id="add-diversity-entry" class="mb-2 px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">
+                            Add Species
+                        </button>
+                        <div class="overflow-x-auto max-h-96">
+                            <table id="diversity-input-table" class="min-w-full w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <thead class="bg-gray-100 border-b">
+                                    <tr>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Species Name</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Number of Individuals (n)</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600 uppercase">Remove</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="diversity-input-table-body">
+                                    <!-- Rows will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <button id="calculate-diversity-indices" class="mt-4 w-full px-5 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150">
+                            Calculate Indices
+                        </button>
+                    </div>
+
+                    <!-- Output Panel -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-700">2. Results</h3>
+                        <!-- Final Results Box -->
+                        <div id="diversity-results-container" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Total Individuals (N):</span>
+                                <span id="div-total-n" class="font-bold text-gray-900">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Species Richness (S):</span>
+                                <span id="div-richness" class="font-bold text-gray-900">--</span>
+                            </div>
+                            <hr>
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Shannon-Wiener Index (H):</span>
+                                <span id="div-shannon" class="font-bold text-green-700 text-lg">--</span>
+                            </div>
+                            <hr>
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Simpson Index (D):</span>
+                                <span id="div-simpson-d" class="font-bold text-green-700 text-lg">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Simpson's Reciprocal (1/D):</span>
+                                <span id="div-simpson-reciprocal" class="font-bold text-green-700 text-lg">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Simpson's Evenness (E):</span>
+                                <span id="div-simpson-evenness" class="font-bold text-green-700 text-lg">--</span>
+                            </div>
+                        </div>
+                        <p id="diversity-results-placeholder" class="text-center text-gray-500 mt-4">Results will appear here after calculation.</p>
+                        
+                        <!-- Step-by-Step Section -->
+                        <div id="diversity-steps-container" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-4 mt-6">
+                            <h4 class="text-lg font-medium text-gray-700">Step-by-Step Calculation</h4>
+                            
+                            <!-- Step 1: N and S -->
+                            <div>
+                                <h5 class="font-semibold text-gray-800">1. Totals</h5>
+                                <p class="text-sm text-gray-600 font-mono" id="div-step-n">N = ...</p>
+                                <p class="text-sm text-gray-600 font-mono" id="div-step-s">S = ...</p>
+                            </div>
+
+                            <!-- Step 2: Proportions (pi) -->
+                            <div>
+                                <h5 class="font-semibold text-gray-800">2. Proportions (pᵢ)</h5>
+                                <p class="text-sm text-gray-600 font-mono">Proportion (pᵢ) = nᵢ / N</p>
+                                <div id="div-step-proportions" class="text-sm text-gray-600 font-mono space-y-1">
+                                    <!-- p_i calculations will be injected here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Step 3: Shannon Index (H) -->
+                            <div>
+                                <h5 class="font-semibold text-gray-800">3. Shannon-Wiener Index (H)</h5>
+                                <p class="text-sm text-gray-600 font-mono">H = -Σ(pᵢ * ln(pᵢ))</p>
+                                <div id="div-step-shannon-calc" class="text-sm text-gray-600 font-mono space-y-1">
+                                    <!-- p_i * ln(p_i) calculations will be injected here -->
+                                </div>
+                                <p class="text-sm text-gray-600 font-mono" id="div-step-shannon-sum"></p>
+                                <p class="text-sm text-gray-600 font-mono font-bold" id="div-step-shannon-final"></p>
+                            </div>
+
+                            <!-- Step 4: Simpson Index (D) -->
+                            <div>
+                                <h5 class="font-semibold text-gray-800">4. Simpson Index (D)</h5>
+                                <p class="text-sm text-gray-600 font-mono">D = Σ(pᵢ²)</p>
+                                <div id="div-step-simpson-calc" class="text-sm text-gray-600 font-mono space-y-1">
+                                    <!-- p_i^2 calculations will be injected here -->
+                                </div>
+                                <p class="text-sm text-gray-600 font-mono font-bold" id="div-step-simpson-final"></p>
+                            </div>
+
+                            <!-- Step 5: Simpson's Reciprocal (1/D) -->
+                            <div>
+                                <h5 class="font-semibold text-gray-800">5. Simpson's Reciprocal (1/D)</h5>
+                                <p class="text-sm text-gray-600 font-mono" id="div-step-reciprocal-final"></p>
+                            </div>
+
+                            <!-- Step 6: Simpson's Evenness (E) -->
+                            <div>
+                                <h5 class="font-semibold text-gray-800">6. Simpson's Evenness (E)</h5>
+                                <p class="text-sm text-gray-600 font-mono">E = (1/D) / S</p>
+                                <p class="text-sm text-gray-600 font-mono font-bold" id="div-step-evenness-final"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-red-700">Error</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p id="error-message" class="text-sm text-gray-600"></p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="close-error-modal" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Global Elements ---
+            const tabs = document.querySelectorAll('[role="tab"]');
+            const panels = document.querySelectorAll('[role="tabpanel"]');
+            const errorModal = document.getElementById('error-modal');
+            const errorMessage = document.getElementById('error-message');
+            const closeErrorModalBtn = document.getElementById('close-error-modal');
+
+            // --- Species Accumulation (SAC) Elements ---
+            const speciesDataInput = document.getElementById('species-data');
+            const iterationsInput = document.getElementById('iterations');
+            const calculateAccBtn = document.getElementById('calculate-accumulation');
+            const accCanvas = document.getElementById('accumulation-chart');
+            const accStatus = document.getElementById('accumulation-status');
+            let accChart = null;
+
+            // --- Species-Area (SAR) Elements ---
+            const addAreaEntryBtn = document.getElementById('add-area-entry');
+            const areaTableBody = document.getElementById('species-area-table-body');
+            const logLogCheckbox = document.getElementById('log-log-scale');
+            const areaCanvas = document.getElementById('area-chart');
+            const areaStatus = document.getElementById('area-status');
+            let areaChart = null;
+
+            // --- DBH Calculator Elements ---
+            const addDbhEntryBtn = document.getElementById('add-dbh-entry');
+            const dbhTableBody = document.getElementById('dbh-table-body');
+            const dbhStepsContainer = document.getElementById('dbh-steps-container');
+            const dbhStep1 = document.getElementById('dbh-step-1');
+            const dbhStep2 = document.getElementById('dbh-step-2');
+            let dbhTreeCount = 0;
+
+            // --- AGB Calculator Elements ---
+            const addAgbEntryBtn = document.getElementById('add-agb-entry');
+            const agbTableBody = document.getElementById('agb-table-body');
+            const agbStepsContainer = document.getElementById('agb-steps-container');
+            let agbTreeCount = 0;
+
+            // --- BGB Calculator Elements ---
+            const addBgbEntryBtn = document.getElementById('add-bgb-entry');
+            const bgbTableBody = document.getElementById('bgb-table-body');
+            const bgbStepsContainer = document.getElementById('bgb-steps-container');
+            let bgbTreeCount = 0;
+
+            // --- IVI Calculator Elements ---
+            const addIviEntryBtn = document.getElementById('add-ivi-entry');
+            const iviInputTableBody = document.getElementById('ivi-input-table-body');
+            const calculateIviBtn = document.getElementById('calculate-ivi');
+            const iviOutputTableBody = document.getElementById('ivi-output-table-body');
+            const iviStepsContainer = document.getElementById('ivi-steps-container');
+
+            // --- Diversity Indices Elements ---
+            const addDiversityEntryBtn = document.getElementById('add-diversity-entry');
+            const diversityInputTableBody = document.getElementById('diversity-input-table-body');
+            const calculateDiversityBtn = document.getElementById('calculate-diversity-indices');
+            const diversityResultsContainer = document.getElementById('diversity-results-container');
+            const diversityResultsPlaceholder = document.getElementById('diversity-results-placeholder');
+            const divTotalN = document.getElementById('div-total-n');
+            const divRichness = document.getElementById('div-richness');
+            const divShannon = document.getElementById('div-shannon');
+            const divSimpsonD = document.getElementById('div-simpson-d');
+            const divSimpsonReciprocal = document.getElementById('div-simpson-reciprocal');
+            const divSimpsonEvenness = document.getElementById('div-simpson-evenness');
+            const diversityStepsContainer = document.getElementById('diversity-steps-container');
+            const divStepN = document.getElementById('div-step-n');
+            const divStepS = document.getElementById('div-step-s');
+            const divStepProportions = document.getElementById('div-step-proportions');
+            const divStepShannonCalc = document.getElementById('div-step-shannon-calc');
+            const divStepShannonSum = document.getElementById('div-step-shannon-sum');
+            const divStepShannonFinal = document.getElementById('div-step-shannon-final');
+            const divStepSimpsonCalc = document.getElementById('div-step-simpson-calc');
+            const divStepSimpsonFinal = document.getElementById('div-step-simpson-final');
+            const divStepReciprocalFinal = document.getElementById('div-step-reciprocal-final');
+            const divStepEvennessFinal = document.getElementById('div-step-evenness-final');
+
+
+            // --- Tab Switching Logic ---
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    // Deactivate all tabs
+                    tabs.forEach(t => {
+                        t.setAttribute('aria-selected', 'false');
+                        t.classList.remove('tab-active');
+                        t.classList.add('tab-inactive');
+                    });
+                    // Hide all panels
+                    panels.forEach(p => {
+                        p.classList.add('hidden');
+                    });
+
+                    // Activate clicked tab
+                    const clickedTab = e.target;
+                    clickedTab.setAttribute('aria-selected', 'true');
+                    clickedTab.classList.add('tab-active');
+                    clickedTab.classList.remove('tab-inactive');
+
+                    // Show corresponding panel
+                    const panelId = clickedTab.getAttribute('aria-controls');
+                    document.getElementById(panelId).classList.remove('hidden');
+                });
+            });
+
+            // --- Error Modal Logic ---
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorModal.classList.remove('hidden');
+            }
+            closeErrorModalBtn.addEventListener('click', () => {
+                errorModal.classList.add('hidden');
+            });
+
+            // --- Species Accumulation Logic ---
+            if (calculateAccBtn) {
+                calculateAccBtn.addEventListener('click', () => {
+                    const rawData = speciesDataInput.value.trim();
+                    const iterations = parseInt(iterationsInput.value, 10);
+
+                    if (!rawData) {
+                        showError("Please enter species data.");
+                        return;
+                    }
+                    if (isNaN(iterations) || iterations < 10) {
+                        showError("Please enter at least 10 iterations.");
+                        return;
+                    }
+
+                    accStatus.textContent = "Calculating... this may take a moment.";
+
+                    // Use setTimeout to allow the UI to update before heavy computation
+                    setTimeout(() => {
+                        try {
+                            const samples = rawData.split('\n')
+                                .filter(line => line.trim().length > 0)
+                                .map(line => 
+                                    line.split(',')
+                                        .map(s => s.trim())
+                                        .filter(s => s.length > 0)
+                                );
+
+                            if (samples.length === 0) {
+                                showError("No valid sample data found. Check your input format.");
+                                accStatus.textContent = "Chart will appear here after calculation.";
+                                return;
+                            }
+
+                            const numSamples = samples.length;
+                            const allIterationResults = [];
+
+                            for (let i = 0; i < iterations; i++) {
+                                const shuffledSamples = [...samples].sort(() => 0.5 - Math.random());
+                                const cumulativeSpecies = [];
+                                const seenSpecies = new Set();
+                                
+                                shuffledSamples.forEach(sample => {
+                                    sample.forEach(species => {
+                                        seenSpecies.add(species);
+                                    });
+                                    cumulativeSpecies.push(seenSpecies.size);
+                                });
+                                allIterationResults.push(cumulativeSpecies);
+                            }
+
+                            // Calculate average and std dev
+                            const meanSpecies = [];
+                            const stdDev = []; // (Optional, but good for visualization)
+                            
+                            for (let i = 0; i < numSamples; i++) {
+                                const valuesAtStep = allIterationResults.map(result => result[i]);
+                                const sum = valuesAtStep.reduce((a, b) => a + b, 0);
+                                const mean = sum / iterations;
+                                meanSpecies.push(mean);
+                                
+                                // Calculate standard deviation (for error bars)
+                                const sqDiff = valuesAtStep.map(val => Math.pow(val - mean, 2));
+                                const variance = sqDiff.reduce((a, b) => a + b, 0) / iterations;
+                                stdDev.push(Math.sqrt(variance));
+                            }
+
+                            // Plotting
+                            const labels = Array.from({ length: numSamples }, (_, i) => i + 1);
+                            
+                            // Create datasets for mean and confidence interval
+                            const meanData = meanSpecies.map((mean, i) => ({ x: labels[i], y: mean }));
+                            const upperBand = meanSpecies.map((mean, i) => ({ x: labels[i], y: mean + (1.96 * stdDev[i] / Math.sqrt(iterations)) })); // 95% CI
+                            const lowerBand = meanSpecies.map((mean, i) => ({ x: labels[i], y: mean - (1.96 * stdDev[i] / Math.sqrt(iterations)) })); // 95% CI
+
+                            if (accChart) {
+                                accChart.destroy();
+                            }
+                            accChart = new Chart(accCanvas.getContext('2d'), {
+                                type: 'line',
+                                data: {
+                                    datasets: [
+                                        {
+                                            label: 'Mean Species',
+                                            data: meanData,
+                                            borderColor: '#059669', // green-700
+                                            backgroundColor: '#059669',
+                                            tension: 0.1,
+                                            fill: false
+                                        },
+                                        {
+                                            label: '95% Confidence Interval',
+                                            data: upperBand,
+                                            fill: '+1', // Fill to the dataset at index +1 (lowerBand)
+                                            backgroundColor: 'rgba(16, 185, 129, 0.2)', // green-500 with opacity
+                                            borderColor: 'transparent',
+                                            pointRadius: 0
+                                        },
+                                        {
+                                            label: 'Lower 95% CI', // Hidden label
+                                            data: lowerBand,
+                                            fill: false,
+                                            backgroundColor: 'transparent',
+                                            borderColor: 'transparent',
+                                            pointRadius: 0
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    scales: {
+                                        x: {
+                                            type: 'linear',
+                                            title: {
+                                                display: true,
+                                                text: 'Number of Samples'
+                                            }
+                                        },
+                                        y: {
+                                            title: {
+                                                display: true,
+                                                text: 'Cumulative Number of Species'
+                                            },
+                                            beginAtZero: true
+                                        }
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            labels: {
+                                                // Filter out the hidden label
+                                                filter: (item) => item.text !== 'Lower 95% CI'
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                            accStatus.textContent = `Calculation complete (${iterations} iterations).`;
+                        } catch (e) {
+                            console.error(e);
+                            showError(`An error occurred during calculation: ${e.message}`);
+                            accStatus.textContent = "Chart will appear here after calculation.";
+                        }
+                    }, 100);
+                });
+            }
+
+            // --- Species-Area Logic ---
+            let areaDataPoints = [];
+
+            function updateAreaChart() {
+                if (areaDataPoints.length < 2) {
+                    areaStatus.textContent = "Add at least 2 data points to see the plot.";
+                    if(areaChart) areaChart.destroy();
+                    areaChart = null;
+                    return;
+                }
+
+                areaStatus.textContent = "";
+                const useLogLog = logLogCheckbox.checked;
+
+                const chartData = areaDataPoints.map(p => ({
+                    x: useLogLog ? (p.x > 0 ? Math.log10(p.x) : null) : p.x,
+                    y: useLogLog ? (p.y > 0 ? Math.log10(p.y) : null) : p.y,
+                })).filter(p => p.x !== null && p.y !== null); // Filter out non-positive values in log mode
+
+                if (areaChart) {
+                    areaChart.destroy();
+                }
+
+                areaChart = new Chart(areaCanvas.getContext('2d'), {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Species vs. Area',
+                            data: chartData,
+                            backgroundColor: '#10B981' // green-500
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: useLogLog ? 'linear' : 'linear', // Keep linear scale, just plot log values
+                                title: {
+                                    display: true,
+                                    text: useLogLog ? 'Log(Area)' : 'Area'
+                                }
+                            },
+                            y: {
+                                type: useLogLog ? 'linear' : 'linear',
+                                title: {
+                                    display: true,
+                                    text: useLogLog ? 'Log(Species)' : 'Number of Species'
+                                },
+                                beginAtZero: !useLogLog
+                            }
+                        }
+                    }
+                });
+            }
+
+            function addAreaRow() {
+                const newRow = document.createElement('tr');
+                newRow.className = 'border-b';
+                
+                const dataPoint = { id: crypto.randomUUID(), x: null, y: null };
+                areaDataPoints.push(dataPoint);
+                
+                newRow.innerHTML = `
+                    <td class="p-2">
+                        <input type="number" class="w-full p-2 border rounded-md bg-gray-50 sar-area" min="0" step="any" data-id="${dataPoint.id}">
+                    </td>
+                    <td class="p-2">
+                        <input type="number" class="w-full p-2 border rounded-md bg-gray-50 sar-species" min="0" step="1" data-id="${dataPoint.id}">
+                    </td>
+                    <td class="p-2 text-center">
+                        <button class="text-red-500 hover:text-red-700 remove-sar-row" data-id="${dataPoint.id}">&times;</button>
+                    </td>
+                `;
+                areaTableBody.appendChild(newRow);
+            }
+
+            if (addAreaEntryBtn) {
+                addAreaEntryBtn.addEventListener('click', addAreaRow);
+
+                areaTableBody.addEventListener('input', (e) => {
+                    if (!e.target.dataset.id) return;
+                    const id = e.target.dataset.id;
+                    const point = areaDataPoints.find(p => p.id === id);
+                    if (!point) return;
+
+                    if (e.target.classList.contains('sar-area')) {
+                        point.x = parseFloat(e.target.value);
+                    } else if (e.target.classList.contains('sar-species')) {
+                        point.y = parseFloat(e.target.value);
+                    }
+                    updateAreaChart();
+                });
+                
+                areaTableBody.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-sar-row')) {
+                        const id = e.target.dataset.id;
+                        areaDataPoints = areaDataPoints.filter(p => p.id !== id);
+                        e.target.closest('tr').remove();
+                        updateAreaChart();
+                    }
+                });
+
+                logLogCheckbox.addEventListener('change', updateAreaChart);
+
+                // Init with one row
+                addAreaRow();
+            }
+            
+            // --- DBH Calculator Logic ---
+            if (addDbhEntryBtn) {
+                addDbhEntryBtn.addEventListener('click', () => {
+                    dbhTreeCount++;
+                    const newRow = document.createElement('tr');
+                    newRow.className = 'border-b hover:bg-gray-50';
+                    newRow.innerHTML = `
+                        <td class="p-3 font-medium text-gray-800">${dbhTreeCount}</td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 dbh-circumference-input" placeholder="Enter C (cm)" min="0" step="0.1">
+                        </td>
+                        <td class="p-3">
+                            <span class="font-bold text-lg text-green-700 dbh-result-display">-</span>
+                            <span class="text-gray-600 ml-1">cm</span>
+                        </td>
+                        <td class="p-3">
+                            <button class="text-xs px-2 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 dbh-show-steps" disabled>Show Steps</button>
+                        </td>
+                    `;
+                    dbhTableBody.appendChild(newRow);
+                });
+
+                dbhTableBody.addEventListener('input', (event) => {
+                    if (event.target.classList.contains('dbh-circumference-input')) {
+                        const row = event.target.closest('tr');
+                        const resultSpan = row.querySelector('.dbh-result-display');
+                        const stepsBtn = row.querySelector('.dbh-show-steps');
+                        const inputVal = parseFloat(event.target.value);
+
+                        if (inputVal > 0) {
+                            const dbh = inputVal / Math.PI;
+                            resultSpan.textContent = dbh.toFixed(2);
+                            stepsBtn.disabled = false;
+                        } else {
+                            resultSpan.textContent = '-';
+                            stepsBtn.disabled = true;
+                            dbhStepsContainer.classList.add('hidden');
+                        }
+                    }
+                });
+                
+                dbhTableBody.addEventListener('click', (event) => {
+                    if (event.target.classList.contains('dbh-show-steps')) {
+                        const row = event.target.closest('tr');
+                        const circum = parseFloat(row.querySelector('.dbh-circumference-input').value);
+                        const dbh = parseFloat(row.querySelector('.dbh-result-display').textContent);
+                        
+                        if (isNaN(circum) || isNaN(dbh)) return;
+
+                        dbhStep1.textContent = `DBH = Circumference / π = ${circum} / 3.14159...`;
+                        dbhStep2.textContent = `DBH = ${dbh.toFixed(2)} cm`;
+                        dbhStepsContainer.classList.remove('hidden');
+                    }
+                });
+            }
+
+            // --- AGB Calculator Logic ---
+            if (addAgbEntryBtn) {
+                addAgbEntryBtn.addEventListener('click', () => {
+                    agbTreeCount++;
+                    const newRow = document.createElement('tr');
+                    newRow.className = 'border-b hover:bg-gray-50 agb-row';
+                    newRow.dataset.treeId = agbTreeCount;
+                    newRow.innerHTML = `
+                        <td class="p-3 font-medium text-gray-800">${agbTreeCount}</td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 agb-dbh-input" placeholder="e.g., 25.4" min="0" step="0.1">
+                        </td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 agb-density-input" placeholder="e.g., 0.6" min="0" step="0.01">
+                        </td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 agb-a-input" placeholder="e.g., -1.803" step="any">
+                        </td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 agb-b-input" placeholder="e.g., 2.673" step="any">
+                        </td>
+                        <td class="p-3">
+                            <span class="font-bold text-lg text-green-700 agb-result-display">-</span>
+                            <span class="text-gray-600 ml-1">kg</span>
+                        </td>
+                        <td class="p-3">
+                            <button class="text-xs px-2 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 agb-show-steps" disabled>Show Steps</button>
+                        </td>
+                    `;
+                    agbTableBody.appendChild(newRow);
+                });
+
+                agbTableBody.addEventListener('input', (event) => {
+                    const targetInput = event.target;
+                    if (!targetInput.classList.contains('agb-dbh-input') &&
+                        !targetInput.classList.contains('agb-density-input') &&
+                        !targetInput.classList.contains('agb-a-input') &&
+                        !targetInput.classList.contains('agb-b-input')) {
+                        return;
+                    }
+
+                    const row = targetInput.closest('tr');
+                    const resultSpan = row.querySelector('.agb-result-display');
+                    const stepsBtn = row.querySelector('.agb-show-steps');
+
+                    const dbh = parseFloat(row.querySelector('.agb-dbh-input').value);
+                    const density = parseFloat(row.querySelector('.agb-density-input').value);
+                    const a = parseFloat(row.querySelector('.agb-a-input').value);
+                    const b = parseFloat(row.querySelector('.agb-b-input').value);
+
+                    if (!isNaN(dbh) && dbh > 0 &&
+                        !isNaN(density) && density > 0 &&
+                        !isNaN(a) && !isNaN(b)) {
+                        
+                        const lnDBH = Math.log(dbh); // Natural log
+                        const agb = density * Math.exp(a + b * lnDBH);
+                        resultSpan.textContent = agb.toFixed(3);
+                        stepsBtn.disabled = false;
+                    } else {
+                        resultSpan.textContent = '-';
+                        stepsBtn.disabled = true;
+                        agbStepsContainer.classList.add('hidden');
+                    }
+                });
+
+                agbTableBody.addEventListener('click', (event) => {
+                    if (event.target.classList.contains('agb-show-steps')) {
+                        const row = event.target.closest('tr.agb-row');
+                        const dbh = parseFloat(row.querySelector('.agb-dbh-input').value);
+                        const density = parseFloat(row.querySelector('.agb-density-input').value);
+                        const a = parseFloat(row.querySelector('.agb-a-input').value);
+                        const b = parseFloat(row.querySelector('.agb-b-input').value);
+                        const agb = parseFloat(row.querySelector('.agb-result-display').textContent);
+                        const treeId = row.dataset.treeId;
+
+                        if (isNaN(dbh) || isNaN(density) || isNaN(a) || isNaN(b) || isNaN(agb)) return;
+
+                        const lnDBH = Math.log(dbh);
+                        const b_lnDBH = b * lnDBH;
+                        const a_b_lnDBH = a + b_lnDBH;
+                        const exp_val = Math.exp(a_b_lnDBH);
+
+                        document.getElementById('agb-steps-tree-id').textContent = treeId;
+                        document.getElementById('agb-step-1-val').textContent = dbh;
+                        document.getElementById('agb-step-1-res').textContent = lnDBH.toFixed(4);
+                        document.getElementById('agb-step-2-b').textContent = b;
+                        document.getElementById('agb-step-2-ln').textContent = lnDBH.toFixed(4);
+                        document.getElementById('agb-step-2-res').textContent = b_lnDBH.toFixed(4);
+                        document.getElementById('agb-step-3-a').textContent = a;
+                        document.getElementById('agb-step-3-val').textContent = b_lnDBH.toFixed(4);
+                        document.getElementById('agb-step-3-res').textContent = a_b_lnDBH.toFixed(4);
+                        document.getElementById('agb-step-4-val').textContent = a_b_lnDBH.toFixed(4);
+                        document.getElementById('agb-step-4-res').textContent = exp_val.toFixed(4);
+                        document.getElementById('agb-step-5-rho').textContent = density;
+                        document.getElementById('agb-step-5-val').textContent = exp_val.toFixed(4);
+                        document.getElementById('agb-step-6-res').textContent = agb.toFixed(3);
+
+                        agbStepsContainer.classList.remove('hidden');
+                    }
+                });
+            }
+
+            // --- BGB Calculator Logic ---
+            if (addBgbEntryBtn) {
+                addBgbEntryBtn.addEventListener('click', () => {
+                    bgbTreeCount++;
+                    const newRow = document.createElement('tr');
+                    newRow.className = 'border-b hover:bg-gray-50 bgb-row';
+                    newRow.dataset.treeId = bgbTreeCount;
+                    newRow.innerHTML = `
+                        <td class="p-3 font-medium text-gray-800">${bgbTreeCount}</td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 bgb-dbh-input" placeholder="e.g., 25.4" min="0" step="0.1">
+                        </td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 bgb-r-input" placeholder="e.g., 0.2" min="0" step="0.01">
+                        </td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 bgb-a-input" placeholder="e.g., -1.05" step="any">
+                        </td>
+                        <td class="p-3">
+                            <input type="number" class="w-full max-w-xs p-2 border rounded-md bg-gray-50 focus:ring-green-500 focus:border-green-500 bgb-b-input" placeholder="e.g., 2.1" step="any">
+                        </td>
+                        <td class="p-3">
+                            <span class="font-bold text-lg text-green-700 bgb-result-display">-</span>
+                            <span class="text-gray-600 ml-1">kg</span>
+                        </td>
+                        <td class="p-3">
+                            <button class="text-xs px-2 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 bgb-show-steps" disabled>Show Steps</button>
+                        </td>
+                    `;
+                    bgbTableBody.appendChild(newRow);
+                });
+
+                bgbTableBody.addEventListener('input', (event) => {
+                    const targetInput = event.target;
+                    if (!targetInput.classList.contains('bgb-dbh-input') &&
+                        !targetInput.classList.contains('bgb-r-input') &&
+                        !targetInput.classList.contains('bgb-a-input') &&
+                        !targetInput.classList.contains('bgb-b-input')) {
+                        return;
+                    }
+
+                    const row = targetInput.closest('tr');
+                    const resultSpan = row.querySelector('.bgb-result-display');
+                    const stepsBtn = row.querySelector('.bgb-show-steps');
+
+                    const dbh = parseFloat(row.querySelector('.bgb-dbh-input').value);
+                    const r = parseFloat(row.querySelector('.bgb-r-input').value);
+                    const a = parseFloat(row.querySelector('.bgb-a-input').value);
+                    const b = parseFloat(row.querySelector('.bgb-b-input').value);
+
+                    if (!isNaN(dbh) && dbh > 0 &&
+                        !isNaN(r) && r > 0 &&
+                        !isNaN(a) && !isNaN(b)) {
+                        
+                        const lnDBH = Math.log(dbh); // Natural log
+                        const bgb = r * Math.exp(a + b * lnDBH);
+                        resultSpan.textContent = bgb.toFixed(3);
+                        stepsBtn.disabled = false;
+                    } else {
+                        resultSpan.textContent = '-';
+                        stepsBtn.disabled = true;
+                        bgbStepsContainer.classList.add('hidden');
+                    }
+                });
+                
+                bgbTableBody.addEventListener('click', (event) => {
+                    if (event.target.classList.contains('bgb-show-steps')) {
+                        const row = event.target.closest('tr.bgb-row');
+                        const dbh = parseFloat(row.querySelector('.bgb-dbh-input').value);
+                        const r = parseFloat(row.querySelector('.bgb-r-input').value);
+                        const a = parseFloat(row.querySelector('.bgb-a-input').value);
+                        const b = parseFloat(row.querySelector('.bgb-b-input').value);
+                        const bgb = parseFloat(row.querySelector('.bgb-result-display').textContent);
+                        const treeId = row.dataset.treeId;
+
+                        if (isNaN(dbh) || isNaN(r) || isNaN(a) || isNaN(b) || isNaN(bgb)) return;
+
+                        const lnDBH = Math.log(dbh);
+                        const b_lnDBH = b * lnDBH;
+                        const a_b_lnDBH = a + b_lnDBH;
+                        const exp_val = Math.exp(a_b_lnDBH);
+
+                        document.getElementById('bgb-steps-tree-id').textContent = treeId;
+                        document.getElementById('bgb-step-1-val').textContent = dbh;
+                        document.getElementById('bgb-step-1-res').textContent = lnDBH.toFixed(4);
+                        document.getElementById('bgb-step-2-b').textContent = b;
+                        document.getElementById('bgb-step-2-ln').textContent = lnDBH.toFixed(4);
+                        document.getElementById('bgb-step-2-res').textContent = b_lnDBH.toFixed(4);
+                        document.getElementById('bgb-step-3-a').textContent = a;
+                        document.getElementById('bgb-step-3-val').textContent = b_lnDBH.toFixed(4);
+                        document.getElementById('bgb-step-3-res').textContent = a_b_lnDBH.toFixed(4);
+                        document.getElementById('bgb-step-4-val').textContent = a_b_lnDBH.toFixed(4);
+                        document.getElementById('bgb-step-4-res').textContent = exp_val.toFixed(4);
+                        document.getElementById('bgb-step-5-r').textContent = r;
+                        document.getElementById('bgb-step-5-val').textContent = exp_val.toFixed(4);
+                        document.getElementById('bgb-step-6-res').textContent = bgb.toFixed(3);
+
+                        bgbStepsContainer.classList.remove('hidden');
+                    }
+                });
+            }
+
+            // --- IVI Calculator Logic ---
+            function addIviRow() {
+                const newRow = document.createElement('tr');
+                newRow.className = 'border-b ivi-row hover:bg-gray-50';
+                newRow.innerHTML = `
+                    <td class="p-2">
+                        <input type="text" class="w-full p-2 border rounded-md bg-gray-50 ivi-name" placeholder="Species Name">
+                    </td>
+                    <td class="p-2">
+                        <input type="number" class="w-full p-2 border rounded-md bg-gray-50 ivi-individuals" min="0" step="1" placeholder="e.g., 50">
+                    </td>
+                    <td class="p-2">
+                        <input type="number" class="w-full p-2 border rounded-md bg-gray-50 ivi-frequency" min="0" step="1" placeholder="e.g., 5">
+                    </td>
+                    <td class="p-2">
+                        <input type="number" class="w-full p-2 border rounded-md bg-gray-50 ivi-basal-area" min="0" step="0.01" placeholder="e.g., 12.5">
+                    </td>
+                    <td class="p-2 text-center">
+                        <button class="text-red-500 hover:text-red-700 remove-ivi-row font-bold text-xl">&times;</button>
+                    </td>
+                `;
+                iviInputTableBody.appendChild(newRow);
+            }
+
+            if (addIviEntryBtn) {
+                addIviEntryBtn.addEventListener('click', addIviRow);
+
+                // Add row removal logic
+                iviInputTableBody.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-ivi-row')) {
+                        e.target.closest('tr').remove();
+                        iviStepsContainer.classList.add('hidden'); // Hide steps if row removed
+                        iviOutputTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Click "Calculate IVI" to see results.</td></tr>';
+                    }
+                });
+
+                // Init with one row
+                addIviRow();
+            }
+
+            if (calculateIviBtn) {
+                calculateIviBtn.addEventListener('click', () => {
+                    const inputRows = iviInputTableBody.querySelectorAll('tr.ivi-row');
+                    if (inputRows.length === 0) {
+                        showError("Please add at least one species to calculate IVI.");
+                        return;
+                    }
+
+                    let totalIndividuals = 0;
+                    let totalFrequency = 0;
+                    let totalBasalArea = 0;
+                    const speciesData = [];
+                    let hasError = false;
+                    
+                    let densityParts = [];
+                    let freqParts = [];
+                    let basalParts = [];
+
+                    // First pass: Read data and calculate totals
+                    inputRows.forEach((row, index) => {
+                        const name = row.querySelector('.ivi-name').value.trim();
+                        const individuals = parseFloat(row.querySelector('.ivi-individuals').value);
+                        const frequency = parseFloat(row.querySelector('.ivi-frequency').value);
+                        const basalArea = parseFloat(row.querySelector('.ivi-basal-area').value);
+
+                        if (!name) {
+                            showError(`Please enter a name for species in row ${index + 1}.`);
+                            hasError = true;
+                            return;
+                        }
+                        if (isNaN(individuals) || individuals < 0) {
+                            showError(`Invalid number of individuals for ${name}. Please enter a non-negative number.`);
+                            hasError = true;
+                            return;
+                        }
+                        if (isNaN(frequency) || frequency < 0) {
+                            showError(`Invalid frequency for ${name}. Please enter a non-negative number.`);
+                            hasError = true;
+                            return;
+                        }
+                        if (isNaN(basalArea) || basalArea < 0) {
+                            showError(`Invalid basal area for ${name}. Please enter a non-negative number.`);
+                            hasError = true;
+                            return;
+                        }
+
+                        totalIndividuals += individuals;
+                        totalFrequency += frequency;
+                        totalBasalArea += basalArea;
+
+                        densityParts.push(individuals);
+                        freqParts.push(frequency);
+                        basalParts.push(basalArea);
+
+                        speciesData.push({ name, individuals, frequency, basalArea });
+                    });
+
+                    if (hasError) return;
+
+                    if (totalIndividuals === 0 || totalFrequency === 0 || totalBasalArea === 0) {
+                        showError("Total Individuals, Total Frequency, and Total Basal Area must all be greater than 0 to calculate IVI. One or more of your totals is 0.");
+                        return;
+                    }
+
+                    // Second pass: Calculate IVI and populate output table
+                    iviOutputTableBody.innerHTML = ''; // Clear previous results
+
+                    speciesData.forEach((species, index) => {
+                        const relDensity = (species.individuals / totalIndividuals) * 100;
+                        const relFrequency = (species.frequency / totalFrequency) * 100;
+                        const relDominance = (species.basalArea / totalBasalArea) * 100;
+                        const ivi = relDensity + relFrequency + relDominance;
+
+                        const newRow = document.createElement('tr');
+                        newRow.className = 'border-b hover:bg-gray-50';
+                        newRow.innerHTML = `
+                            <td class="p-3 font-medium text-gray-800">${species.name}</td>
+                            <td class="p-3">${relDensity.toFixed(2)}</td>
+                            <td class="p-3">${relFrequency.toFixed(2)}</td>
+                            <td class="p-3">${relDominance.toFixed(2)}</td>
+                            <td class="p-3 font-bold text-green-700">${ivi.toFixed(2)}</td>
+                        `;
+                        iviOutputTableBody.appendChild(newRow);
+                        
+                        // Populate steps for the first species
+                        if (index === 0) {
+                            document.getElementById('ivi-step-total-density').textContent = `Total Individuals = ${densityParts.join(' + ')} = ${totalIndividuals}`;
+                            document.getElementById('ivi-step-total-frequency').textContent = `Total Frequency = ${freqParts.join(' + ')} = ${totalFrequency}`;
+                            document.getElementById('ivi-step-total-dominance').textContent = `Total Basal Area = ${basalParts.join(' + ')} = ${totalBasalArea.toFixed(2)}`;
+                            
+                            document.getElementById('ivi-step-species-name').textContent = species.name;
+                            document.getElementById('ivi-step-rel-density').textContent = `Rel. Density = (${species.individuals} / ${totalIndividuals}) * 100 = ${relDensity.toFixed(2)}%`;
+                            document.getElementById('ivi-step-rel-frequency').textContent = `Rel. Frequency = (${species.frequency} / ${totalFrequency}) * 100 = ${relFrequency.toFixed(2)}%`;
+                            document.getElementById('ivi-step-rel-dominance').textContent = `Rel. Dominance = (${species.basalArea} / ${totalBasalArea.toFixed(2)}) * 100 = ${relDominance.toFixed(2)}%`;
+                            document.getElementById('ivi-step-final-ivi').textContent = `IVI = ${relDensity.toFixed(2)} + ${relFrequency.toFixed(2)} + ${relDominance.toFixed(2)} = ${ivi.toFixed(2)}`;
+                            
+                            iviStepsContainer.classList.remove('hidden');
+                        }
+                    });
+                });
+            }
+
+            // --- Diversity Indices Logic ---
+            function addDiversityRow() {
+                const newRow = document.createElement('tr');
+                newRow.className = 'border-b diversity-row hover:bg-gray-50';
+                newRow.innerHTML = `
+                    <td class="p-2">
+                        <input type="text" class="w-full p-2 border rounded-md bg-gray-50 diversity-name" placeholder="Species Name">
+                    </td>
+                    <td class="p-2">
+                        <input type="number" class="w-full p-2 border rounded-md bg-gray-50 diversity-count" min="1" step="1" placeholder="e.g., 10">
+                    </td>
+                    <td class="p-2 text-center">
+                        <button class="text-red-500 hover:text-red-700 remove-diversity-row font-bold text-xl">&times;</button>
+                    </td>
+                `;
+                diversityInputTableBody.appendChild(newRow);
+            }
+
+            if (addDiversityEntryBtn) {
+                addDiversityEntryBtn.addEventListener('click', addDiversityRow);
+
+                diversityInputTableBody.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-diversity-row')) {
+                        e.target.closest('tr').remove();
+                        // Hide steps if row removed
+                        diversityResultsContainer.classList.add('hidden');
+                        diversityStepsContainer.classList.add('hidden');
+                        diversityResultsPlaceholder.classList.remove('hidden');
+                    }
+                });
+
+                // Init with one row
+                addDiversityRow();
+            }
+
+            if (calculateDiversityBtn) {
+                calculateDiversityBtn.addEventListener('click', () => {
+                    const inputRows = diversityInputTableBody.querySelectorAll('tr.diversity-row');
+                    if (inputRows.length === 0) {
+                        showError("Please add at least one species.");
+                        return;
+                    }
+
+                    let totalIndividuals_N = 0;
+                    let richness_S = 0;
+                    let sumP_lnP = 0;    // For Shannon
+                    let sumP_squared = 0; // For Simpson
+                    const speciesData = []; // Will store {name, count}
+                    let hasError = false;
+
+                    inputRows.forEach((row, index) => {
+                        const name = row.querySelector('.diversity-name').value.trim() || `Species ${index + 1}`;
+                        const count = parseInt(row.querySelector('.diversity-count').value, 10);
+                        
+                        if (isNaN(count) || count <= 0) {
+                            showError(`Invalid count for ${name}. Please enter a positive integer.`);
+                            hasError = true;
+                            return;
+                        }
+
+                        speciesData.push({ name, count }); // Store name and count
+                        totalIndividuals_N += count;
+                        richness_S++;
+                    });
+
+                    if (hasError) return;
+
+                    if (richness_S === 0 || totalIndividuals_N === 0) {
+                        showError("Please enter valid data for at least one species.");
+                        return;
+                    }
+
+                    // --- Start Step-by-Step Calculations ---
+                    // Clear previous steps
+                    divStepProportions.innerHTML = '';
+                    divStepShannonCalc.innerHTML = '';
+                    divStepSimpsonCalc.innerHTML = '';
+
+                    // Step 1: N and S
+                    divStepN.textContent = `N = ${speciesData.map(s => s.count).join(' + ')} = ${totalIndividuals_N}`;
+                    divStepS.textContent = `S = ${richness_S} (total number of species)`;
+
+                    // Step 2 & 3 & 4: Proportions and Sums
+                    let shannonSumParts = [];
+                    let simpsonSumParts = [];
+
+                    speciesData.forEach(species => {
+                        const n_i = species.count;
+                        const p_i = n_i / totalIndividuals_N;
+                        
+                        // Step 2: Proportions
+                        const p_i_calc = `pᵢ (${species.name}) = ${n_i} / ${totalIndividuals_N} = ${p_i.toFixed(4)}`;
+                        divStepProportions.innerHTML += `<p>${p_i_calc}</p>`;
+                        
+                        // Step 3: Shannon (pᵢ * ln(pᵢ))
+                        const ln_p_i = Math.log(p_i);
+                        const p_lnP = p_i * ln_p_i;
+                        sumP_lnP += p_lnP;
+                        const shannon_calc = `pᵢ * ln(pᵢ) (${species.name}) = ${p_i.toFixed(4)} * ln(${p_i.toFixed(4)}) = ${p_i.toFixed(4)} * ${ln_p_i.toFixed(4)} = ${p_lnP.toFixed(4)}`;
+                        divStepShannonCalc.innerHTML += `<p>${shannon_calc}</p>`;
+                        shannonSumParts.push(p_lnP.toFixed(4));
+
+                        // Step 4: Simpson (pᵢ²)
+                        const p_i_squared = p_i * p_i;
+                        sumP_squared += p_i_squared;
+                        const simpson_calc = `pᵢ² (${species.name}) = ${p_i.toFixed(4)}² = ${p_i_squared.toFixed(4)}`;
+                        divStepSimpsonCalc.innerHTML += `<p>${simpson_calc}</p>`;
+                        simpsonSumParts.push(p_i_squared.toFixed(4));
+                    });
+
+                    // Calculate Final Indices
+                    const shannon_H = -sumP_lnP;
+                    const simpson_D = sumP_squared;
+                    const simpson_Reciprocal = 1 / simpson_D;
+                    const simpson_Evenness = simpson_Reciprocal / richness_S;
+
+                    // --- Populate Final Step-by-Step ---
+                    // Step 3: Shannon Final
+                    divStepShannonSum.textContent = `Σ(pᵢ * ln(pᵢ)) = ${shannonSumParts.join(' + ')} = ${sumP_lnP.toFixed(4)}`;
+                    divStepShannonFinal.textContent = `H = -(${sumP_lnP.toFixed(4)}) = ${shannon_H.toFixed(4)}`;
+                    
+                    // Step 4: Simpson Final
+                    divStepSimpsonFinal.textContent = `D = ${simpsonSumParts.join(' + ')} = ${simpson_D.toFixed(4)}`;
+
+                    // Step 5: Reciprocal Final
+                    divStepReciprocalFinal.textContent = `1/D = 1 / ${simpson_D.toFixed(4)} = ${simpson_Reciprocal.toFixed(4)}`;
+
+                    // Step 6: Evenness Final
+                    divStepEvennessFinal.textContent = `E = (1/D) / S = ${simpson_Reciprocal.toFixed(4)} / ${richness_S} = ${simpson_Evenness.toFixed(4)}`;
+
+
+                    // --- Display Final Results Box ---
+                    divTotalN.textContent = totalIndividuals_N;
+                    divRichness.textContent = richness_S;
+                    divShannon.textContent = shannon_H.toFixed(4);
+                    divSimpsonD.textContent = simpson_D.toFixed(4);
+                    divSimpsonReciprocal.textContent = simpson_Reciprocal.toFixed(4);
+                    divSimpsonEvenness.textContent = simpson_Evenness.toFixed(4);
+
+                    diversityResultsContainer.classList.remove('hidden');
+                    diversityStepsContainer.classList.remove('hidden'); // Show steps
+                    diversityResultsPlaceholder.classList.add('hidden');
+                });
+            }
+
+        });
+    </script>
+</body>
+</html>
