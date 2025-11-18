@@ -71,6 +71,20 @@
             <!-- Panel 1: Species Accumulation -->
             <div id="species-accumulation" role="tabpanel" class="p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
                 <h2 class="text-2xl font-bold text-green-800 mb-4">Species Accumulation Curve</h2>
+                
+                <!-- Informational Box -->
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2 mb-6 text-sm text-green-800">
+                    <p>A <strong>Species Accumulation Curve</strong> (SAC) plots the cumulative number of unique species found as more samples are collected.</p>
+                    <p><strong>How it works:</strong> This tool randomizes the order of your samples many times (iterations) and plots the average number of species found at each step. This creates a smooth curve showing the mean and 95% confidence interval.</p>
+                    <p><strong>How to interpret:</strong>
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li><strong>Steep Slope:</strong> The curve rises steeply at first, as most samples add new species.</li>
+                            <li><strong>Plateau (Flattening):</strong> As the curve flattens, it suggests that you have sampled the majority of the species in the area. Further sampling will yield few or no new species.</li>
+                        </ul>
+                    </p>
+                    <p class="font-medium mt-2">This helps determine if your sampling effort was sufficient to capture the site's full species richness.</p>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Inputs -->
                     <div class="space-y-4">
@@ -98,6 +112,19 @@
             <!-- Panel 2: Species-Area -->
             <div id="species-area" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
                 <h2 class="text-2xl font-bold text-green-800 mb-4">Species-Area Curve</h2>
+                
+                <!-- Informational Box -->
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2 mb-6 text-sm text-green-800">
+                    <p>A <strong>Species-Area Curve</strong> (SAR) shows the relationship between the size of an area and the number of species found within it.</p>
+                    <p><strong>How it works:</strong> You enter data points for different nested or separate areas (e.g., 1m², 5m², 10m²) and the total number of species found in each. The tool plots these points.</p>
+                    <p><strong>How to interpret:</strong>
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li>This curve also typically rises and then flattens. The point where it flattens is the <strong>minimal area</strong>.</li>
+                            <li>The minimal area is the smallest sample size needed to adequately represent the species diversity of that specific habitat.</li>
+                        </ul>
+                    </p>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Inputs -->
                     <div class="space-y-4">
@@ -131,6 +158,7 @@
                         </div>
                         <canvas id="area-chart"></canvas>
                         <p id="area-status" class="text-center text-gray-500 mt-4">Add data to see the plot.</p>
+                        <!-- Equation Placeholder Removed -->
                     </div>
                 </div>
             </div>
@@ -138,10 +166,15 @@
             <!-- Panel 3: DBH Calculator -->
             <div id="dbh-calculator" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
                 <h2 class="text-2xl font-bold text-green-800 mb-4">DBH Calculator</h2>
+                
+                <!-- Informational Box -->
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2 mb-6 text-sm text-green-800">
+                    <p><strong>Diameter at Breast Height (DBH)</strong> is the standard measurement of a tree's diameter, taken at a height of 1.3 meters (or 4.5 feet) above the ground.</p>
+                    <p><strong>Why it's used:</strong> It's the most common and important measurement for trees. It's a simple proxy for a tree's size and is heavily used in allometric equations to estimate a tree's total biomass, carbon content, and volume.</p>
+                    <p>This tool calculates the diameter (DBH) from the circumference, which is what you typically measure in the field with a tape measure.</p>
+                </div>
+                
                 <div class="space-y-4">
-                    <p class="text-gray-700">
-                        Calculate Diameter at Breast Height (DBH) from circumference. DBH is typically measured at 1.3 meters (approx 4.5 feet) from the ground.
-                    </p>
                     <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
                         <h4 class="font-semibold text-green-700">Formula</h4>
                         <p class="text-center font-mono text-lg text-green-900 bg-white p-2 rounded-md my-2 shadow-sm border">
@@ -184,11 +217,15 @@
             <!-- Panel 4: AGB Calculator -->
             <div id="agb-calculator" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
                 <h2 class="text-2xl font-bold text-green-800 mb-4">Above Ground Biomass (AGB) Calculator</h2>
+                
+                <!-- Informational Box -->
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2 mb-6 text-sm text-green-800">
+                    <p><strong>Above Ground Biomass (AGB)</strong> is the total mass of all living organic matter above the ground, including the trunk, branches, and leaves. It is a critical metric for carbon accounting and ecosystem analysis.</p>
+                    <p><strong>How it works:</strong> AGB is rarely measured directly. Instead, it is estimated using <strong>allometric equations</strong>. These are statistical models that predict AGB based on easier-to-measure variables, primarily DBH and wood density.</p>
+                    <p>The equation used here is a common log-linear model. The parameters 'a' (constant) and 'b' (coefficient) are specific to different forest types, regions, or species.</p>
+                </div>
+                
                 <div class="space-y-4">
-                    <p class="text-gray-700">
-                        Calculate Above Ground Biomass (AGB) using tree DBH, wood density, and allometric parameters.
-                        Results are typically in kilograms (kg).
-                    </p>
                     <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
                         <h4 class="font-semibold text-green-700">Formula</h4>
                         <p class="text-gray-800">A common allometric equation is used:</p>
@@ -239,11 +276,15 @@
             <!-- Panel 5: BGB Calculator -->
             <div id="bgb-calculator" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
                 <h2 class="text-2xl font-bold text-green-800 mb-4">Below Ground Biomass (BGB) Calculator</h2>
+                
+                <!-- Informational Box -->
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2 mb-6 text-sm text-green-800">
+                    <p><strong>Below Ground Biomass (BGB)</strong> is the total mass of all living organic matter below the ground, primarily the root system. It is a vital but difficult-to-measure component of forest carbon storage.</p>
+                    <p><strong>How it works:</strong> BGB is almost always estimated indirectly. This is often done by applying a <strong>Root-to-Shoot Ratio (R)</strong> to the Above Ground Biomass (AGB), or by using specific allometric equations that predict BGB directly from DBH.</p>
+                    <p>This tool uses a common DBH-based equation, which may also be combined with a Root-to-Shoot ratio depending on the model you are using.</p>
+                </div>
+
                 <div class="space-y-4">
-                    <p class="text-gray-700">
-                        Calculate Below Ground Biomass (BGB) using tree DBH, root-to-shoot ratio, and allometric parameters.
-                        Results are typically in kilograms (kg).
-                    </p>
                     <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
                         <h4 class="font-semibold text-green-700">Formula</h4>
                         <p class="text-gray-800">A common allometric equation is used:</p>
@@ -294,10 +335,22 @@
             <!-- Panel 6: IVI Calculator -->
             <div id="ivi-calculator" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
                 <h2 class="text-2xl font-bold text-green-800 mb-4">Importance Value Index (IVI) Calculator</h2>
-                <div class="space-y-4">
-                    <p class="text-gray-700">
-                        Calculate IVI for multiple species based on their density, frequency, and basal area.
+                
+                <!-- Informational Box -->
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2 mb-6 text-sm text-green-800">
+                    <p>The <strong>Importance Value Index (IVI)</strong> is a score used in ecology to represent the relative importance or dominance of a species within a plant community.</p>
+                    <p><strong>Why it's used:</strong> It provides a more comprehensive picture of a species' role than any single measure alone. A species could have many small individuals (high density) or few large individuals (high dominance), and the IVI captures both.</p>
+                    <p><strong>How it works:</strong> It combines three relative measures:
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li><strong>Relative Density:</strong> A species' individual count as a % of all individuals.</li>
+                            <li><strong>Relative Frequency:</strong> A species' plot-level occurrence as a % of all plot occurrences.</li>
+                            <li><strong>Relative Dominance:</strong> A species' basal area as a % of the total basal area.</li>
+                        </ul>
                     </p>
+                    <p class="font-medium mt-2">The final IVI score is the sum of these three percentages, typically ranging from 0 to 300.</p>
+                </div>
+                
+                <div class="space-y-4">
                     <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
                         <h4 class="font-semibold text-green-700">Formula</h4>
                         <p class="text-center font-mono text-lg text-green-900 bg-white p-2 rounded-md my-2 shadow-sm border">
@@ -387,6 +440,17 @@
             <!-- Panel 7: Diversity Indices -->
             <div id="diversity-indices" role="tabpanel" class="hidden p-4 md:p-6 bg-white rounded-lg shadow-md border border-gray-200">
                 <h2 class="text-2xl font-bold text-green-800 mb-4">Diversity Indices Calculator</h2>
+                
+                <!-- Informational Box -->
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2 mb-6 text-sm text-green-800">
+                    <p><strong>Diversity Indices</strong> are mathematical measures of species diversity in a community. They provide a single number that reflects both the number of species (<strong>richness</strong>) and their proportional abundance (<strong>evenness</strong>).</p>
+                    <p>This tool calculates two of the most common indices:</p>
+                    <ul class="list-disc list-inside ml-4 mt-1">
+                        <li><strong>Shannon-Wiener Index (H):</strong> More sensitive to rare species. A higher value means higher diversity. Values for real communities are often between 1.5 and 3.5.</li>
+                        <li><strong>Simpson Index (D):</strong> More sensitive to common species. It measures the probability that two individuals randomly selected will be of the *same* species. A value of <strong>0</strong> is infinite diversity and <strong>1</strong> is no diversity. We also show <strong>1/D (Reciprocal)</strong> and <strong>Evenness</strong>, which are more intuitive (higher value = higher diversity).</li>
+                    </ul>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Input Panel -->
                     <div class="space-y-4">
@@ -550,6 +614,7 @@
             const logLogCheckbox = document.getElementById('log-log-scale');
             const areaCanvas = document.getElementById('area-chart');
             const areaStatus = document.getElementById('area-status');
+            // const areaEquation = document.getElementById('area-equation'); // Removed
             let areaChart = null;
 
             // --- DBH Calculator Elements ---
@@ -788,8 +853,8 @@
             let areaDataPoints = [];
 
             function updateAreaChart() {
-                if (areaDataPoints.length < 2) {
-                    areaStatus.textContent = "Add at least 2 data points to see the plot.";
+                if (areaDataPoints.length === 0) { // Changed from < 2 to === 0
+                    areaStatus.textContent = "Add data to see the plot.";
                     if(areaChart) areaChart.destroy();
                     areaChart = null;
                     return;
@@ -798,35 +863,47 @@
                 areaStatus.textContent = "";
                 const useLogLog = logLogCheckbox.checked;
 
-                const chartData = areaDataPoints.map(p => ({
-                    x: useLogLog ? (p.x > 0 ? Math.log10(p.x) : null) : p.x,
-                    y: useLogLog ? (p.y > 0 ? Math.log10(p.y) : null) : p.y,
-                })).filter(p => p.x !== null && p.y !== null); // Filter out non-positive values in log mode
+                // 1. Filter and prep data for plotting
+                const chartData = areaDataPoints
+                    .map(p => ({
+                        x: useLogLog ? (p.x > 0 ? Math.log10(p.x) : null) : p.x,
+                        y: useLogLog ? (p.y > 0 ? Math.log10(p.y) : null) : p.y,
+                    }))
+                    .filter(p => p.x !== null && p.y !== null && !isNaN(p.x) && !isNaN(p.y)); // Filter out null/invalid values
 
                 if (areaChart) {
                     areaChart.destroy();
                 }
 
+                const datasets = [{
+                    label: 'Species vs. Area',
+                    data: chartData,
+                    backgroundColor: '#10B981', // green-500
+                    borderColor: '#059669', // green-700
+                    type: 'scatter', // Use scatter
+                    showLine: true, // Connect the points
+                    tension: 0.1, // Slight curve
+                    fill: false,
+                    borderWidth: 2,
+                }];
+
                 areaChart = new Chart(areaCanvas.getContext('2d'), {
-                    type: 'scatter',
+                    type: 'scatter', // Base type
                     data: {
-                        datasets: [{
-                            label: 'Species vs. Area',
-                            data: chartData,
-                            backgroundColor: '#10B981' // green-500
-                        }]
+                        datasets: datasets
                     },
                     options: {
                         scales: {
                             x: {
-                                type: useLogLog ? 'linear' : 'linear', // Keep linear scale, just plot log values
+                                type: 'linear', // Always linear axis, data is pre-transformed
                                 title: {
                                     display: true,
                                     text: useLogLog ? 'Log(Area)' : 'Area'
-                                }
+                                },
+                                beginAtZero: !useLogLog // Only begin at zero if not log
                             },
                             y: {
-                                type: useLogLog ? 'linear' : 'linear',
+                                type: 'linear', // Always linear axis
                                 title: {
                                     display: true,
                                     text: useLogLog ? 'Log(Species)' : 'Number of Species'
@@ -873,6 +950,8 @@
                     } else if (e.target.classList.contains('sar-species')) {
                         point.y = parseFloat(e.target.value);
                     }
+                    // Sort data points by area (x-value) for correct line plotting
+                    areaDataPoints.sort((a, b) => (a.x || 0) - (b.x || 0));
                     updateAreaChart();
                 });
                 
@@ -1338,7 +1417,7 @@
 
                     let totalIndividuals_N = 0;
                     let richness_S = 0;
-                    let sumP_lnP = 0;    // For Shannon
+                    let sumP_lnP = 0;     // For Shannon
                     let sumP_squared = 0; // For Simpson
                     const speciesData = []; // Will store {name, count}
                     let hasError = false;
