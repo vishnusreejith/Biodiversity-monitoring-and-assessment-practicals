@@ -147,15 +147,15 @@
                 
                 <!-- Informational Box -->
                 <div class="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2 mb-6 text-sm text-green-800 no-print">
-                    <p>A <strong>Species Accumulation Curve</strong> (SAC) plots the cumulative number of unique species found as more samples are collected.</p>
-                    <p><strong>How it works:</strong> This tool randomizes the order of your samples many times (iterations) and plots the average number of species found at each step. This creates a smooth curve showing the mean and 95% confidence interval.</p>
+                    <p>A <strong>Species Accumulation Curve</strong> (Collector's Curve) plots the cumulative number of unique species found as more samples are collected.</p>
+                    <p><strong>How it works:</strong> This tool plots the number of species found based on the <strong>exact order</strong> of the samples entered below. It does not randomize or average the data.</p>
                     <p><strong>How to interpret:</strong>
                         <ul class="list-disc list-inside ml-4 mt-1">
-                            <li><strong>Steep Slope:</strong> The curve rises steeply at first, as most samples add new species.</li>
-                            <li><strong>Plateau (Flattening):</strong> As the curve flattens, it suggests that you have sampled the majority of the species in the area. Further sampling will yield few or no new species.</li>
+                            <li><strong>Steep Slope:</strong> The curve rises steeply at first as new species are encountered.</li>
+                            <li><strong>Plateau (Flattening):</strong> As the curve flattens, it suggests that fewer new species are being found with additional sampling effort.</li>
                         </ul>
                     </p>
-                    <p class="font-medium mt-2">This helps determine if your sampling effort was sufficient to capture the site's full species richness.</p>
+                    <p class="font-medium mt-2">This visualization helps track the rate of species discovery over the course of your fieldwork.</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -166,10 +166,7 @@
                             <p class="text-xs text-gray-500 mb-2 no-print">Enter one sample (quadrat, plot, etc.) per line. Separate species names with a comma. Casing and spacing matter ("SpeciesA" is different from "speciesA").</p>
                             <textarea id="species-data" rows="10" class="w-full p-2 border rounded-md shadow-sm bg-gray-50 focus:ring-green-500 focus:border-green-500 font-mono text-sm" placeholder="speciesA, speciesB, speciesC&#10;speciesA, speciesD, speciesE&#10;speciesB, speciesF, speciesG, speciesA"></textarea>
                         </div>
-                        <div>
-                            <label for="iterations" class="block text-sm font-medium text-gray-700">Randomization Iterations</label>
-                            <input type="number" id="iterations" value="100" min="10" max="1000" class="mt-1 block w-full max-w-xs p-2 border rounded-md shadow-sm bg-gray-50 focus:ring-green-500 focus:border-green-500">
-                        </div>
+                        <!-- Iterations input removed -->
                         <button id="calculate-accumulation" class="px-5 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150">
                             Calculate Curve
                         </button>
@@ -710,7 +707,7 @@
 
             // --- Species Accumulation (SAC) Elements ---
             const speciesDataInput = document.getElementById('species-data');
-            const iterationsInput = document.getElementById('iterations');
+            // iterationsInput removed
             const calculateAccBtn = document.getElementById('calculate-accumulation');
             const accCanvas = document.getElementById('accumulation-chart');
             const accStatus = document.getElementById('accumulation-status');
@@ -816,20 +813,15 @@
             if (calculateAccBtn) {
                 calculateAccBtn.addEventListener('click', () => {
                     const rawData = speciesDataInput.value.trim();
-                    const iterations = parseInt(iterationsInput.value, 10);
 
                     if (!rawData) {
                         showError("Please enter species data.");
                         return;
                     }
-                    if (isNaN(iterations) || iterations < 10) {
-                        showError("Please enter at least 10 iterations.");
-                        return;
-                    }
 
-                    accStatus.textContent = "Calculating... this may take a moment.";
+                    accStatus.textContent = "Calculating...";
 
-                    // Use setTimeout to allow the UI to update before heavy computation
+                    // Use setTimeout to allow the UI to update
                     setTimeout(() => {
                         try {
                             const samples = rawData.split('\n')
@@ -847,45 +839,22 @@
                             }
 
                             const numSamples = samples.length;
-                            const allIterationResults = [];
+                            const cumulativeSpecies = [];
+                            const seenSpecies = new Set();
 
-                            for (let i = 0; i < iterations; i++) {
-                                const shuffledSamples = [...samples].sort(() => 0.5 - Math.random());
-                                const cumulativeSpecies = [];
-                                const seenSpecies = new Set();
-                                
-                                shuffledSamples.forEach(sample => {
-                                    sample.forEach(species => {
-                                        seenSpecies.add(species);
-                                    });
-                                    cumulativeSpecies.push(seenSpecies.size);
+                            // Simple Collector's Curve Calculation (Order of entry)
+                            samples.forEach(sample => {
+                                sample.forEach(species => {
+                                    seenSpecies.add(species);
                                 });
-                                allIterationResults.push(cumulativeSpecies);
-                            }
-
-                            // Calculate average and std dev
-                            const meanSpecies = [];
-                            const stdDev = []; // (Optional, but good for visualization)
-                            
-                            for (let i = 0; i < numSamples; i++) {
-                                const valuesAtStep = allIterationResults.map(result => result[i]);
-                                const sum = valuesAtStep.reduce((a, b) => a + b, 0);
-                                const mean = sum / iterations;
-                                meanSpecies.push(mean);
-                                
-                                // Calculate standard deviation (for error bars)
-                                const sqDiff = valuesAtStep.map(val => Math.pow(val - mean, 2));
-                                const variance = sqDiff.reduce((a, b) => a + b, 0) / iterations;
-                                stdDev.push(Math.sqrt(variance));
-                            }
+                                cumulativeSpecies.push(seenSpecies.size);
+                            });
 
                             // Plotting
                             const labels = Array.from({ length: numSamples }, (_, i) => i + 1);
                             
-                            // Create datasets for mean and confidence interval
-                            const meanData = meanSpecies.map((mean, i) => ({ x: labels[i], y: mean }));
-                            const upperBand = meanSpecies.map((mean, i) => ({ x: labels[i], y: mean + (1.96 * stdDev[i] / Math.sqrt(iterations)) })); // 95% CI
-                            const lowerBand = meanSpecies.map((mean, i) => ({ x: labels[i], y: mean - (1.96 * stdDev[i] / Math.sqrt(iterations)) })); // 95% CI
+                            // Create dataset for simple curve
+                            const chartData = cumulativeSpecies.map((count, i) => ({ x: labels[i], y: count }));
 
                             if (accChart) {
                                 accChart.destroy();
@@ -895,28 +864,12 @@
                                 data: {
                                     datasets: [
                                         {
-                                            label: 'Mean Species',
-                                            data: meanData,
+                                            label: 'Species Observed',
+                                            data: chartData,
                                             borderColor: '#059669', // green-700
                                             backgroundColor: '#059669',
                                             tension: 0.1,
                                             fill: false
-                                        },
-                                        {
-                                            label: '95% Confidence Interval',
-                                            data: upperBand,
-                                            fill: '+1', // Fill to the dataset at index +1 (lowerBand)
-                                            backgroundColor: 'rgba(16, 185, 129, 0.2)', // green-500 with opacity
-                                            borderColor: 'transparent',
-                                            pointRadius: 0
-                                        },
-                                        {
-                                            label: 'Lower 95% CI', // Hidden label
-                                            data: lowerBand,
-                                            fill: false,
-                                            backgroundColor: 'transparent',
-                                            borderColor: 'transparent',
-                                            pointRadius: 0
                                         }
                                     ]
                                 },
@@ -936,24 +889,16 @@
                                             },
                                             beginAtZero: true
                                         }
-                                    },
-                                    plugins: {
-                                        legend: {
-                                            labels: {
-                                                // Filter out the hidden label
-                                                filter: (item) => item.text !== 'Lower 95% CI'
-                                            }
-                                        }
                                     }
                                 }
                             });
-                            accStatus.textContent = `Calculation complete (${iterations} iterations).`;
+                            accStatus.textContent = `Calculation complete (${numSamples} samples processed).`;
                         } catch (e) {
                             console.error(e);
                             showError(`An error occurred during calculation: ${e.message}`);
                             accStatus.textContent = "Chart will appear here after calculation.";
                         }
-                    }, 100);
+                    }, 50);
                 });
             }
 
